@@ -1,0 +1,67 @@
+---
+- hosts: rpi
+  sudo: yes
+  tasks:
+    - name: Install packages I want
+      apt: name={{item}} state=present
+      with_items:
+        - vim
+        - vim-common
+        - snmp
+        - snmp-mibs-downloader
+        - lm-sensors
+        - sensord
+        - nmap
+        - hping3
+        
+    - name: Remove packages 
+      apt: name={{item}} state=absent
+      with_items:
+        - wolfram-engine
+        - libreoffice*
+
+    - name: Check if packages need to be autoremoved
+      command: apt-get --dry-run autoremove
+      register: check_autoremove
+      changed_when: False
+
+    - name: Autoremove unused packages
+      command: apt-get -y autoremove
+      when: "'packages will be REMOVED' in check_autoremove.stdout"
+
+    - name: Remove text when login in
+      become: yes
+      become_user: pi
+      shell: touch /home/pi/.hushlogin
+      args:
+        creates: /home/pi/.hushlogin
+
+    - name: Generate ssh key
+      become: yes
+      become_user: pi
+      shell: ssh-keygen -t rsa -f /home/pi/.ssh/id_rsa -N ""
+      args:
+        creates: /home/pi/.ssh/id_rsa
+
+    - name: Set authorized_keys
+      copy: >
+        src=~/.ssh/id_rsa.pub
+        dest=/home/pi/.ssh/authorized_keys
+        owner=pi
+        mode=0600
+
+    - name: Parted - Resize partition
+      shell: '[ -f /parted_resized ] || (sleep 2 && parted /dev/mmcblk0 2 100% \
+                && resize2fs /dev/mmcblk0p2 && touch /parted_resized && reboot)'
+      async: 1
+      poll: 0
+      ignore_errors: True
+      register: reboot_notneeded
+      args:
+        creates: /parted_resized
+
+    - name: Waiting for server
+      local_action: wait_for host={{inventory_hostname}} port=22 delay=1 state=present connect_timeout=5
+      sudo: false
+
+
