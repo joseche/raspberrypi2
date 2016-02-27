@@ -2,6 +2,10 @@
 - hosts: rpi
   sudo: yes
   tasks:
+
+    - name: update apt
+      shell: apt-get -y update && apt-get -y upgrade
+
     - name: Install packages I want
       apt: name={{item}} state=present
       with_items:
@@ -13,6 +17,14 @@
         - sensord
         - nmap
         - hping3
+        - collectd-utils
+        - librrds-perl
+        - hddtemp
+        - librrds-perl 
+        - libjson-perl 
+        - libhtml-parser-perl
+        - libpango-1.0-0
+        - libpangocairo-1.0-0
         
     - name: Remove packages 
       apt: name={{item}} state=absent
