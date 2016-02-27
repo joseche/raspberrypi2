@@ -63,7 +63,7 @@
         mode=0600
 
     - name: Parted - Resize partition
-      shell: '[ -f /parted_resized ] || (sleep 2 && parted /dev/mmcblk0 2 100% \
+      shell: '[ -f /parted_resized ] || (sleep 2 && parted /dev/mmcblk0 resizepart 2 100% \
                 && resize2fs /dev/mmcblk0p2 && touch /parted_resized && reboot)'
       async: 1
       poll: 0
